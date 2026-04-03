@@ -60,28 +60,21 @@ print_temp(){
 #!/bin/bash
 
 get_time_until_charged() {
-
-   echo $(acpi -b | awk '{ print $5 }');
+   if [ $(cat /sys/class/power_supply/BAT1/status) = "Discharging" ]; then
+      curr_now=$(cat /sys/class/power_supply/BAT1/current_now);
+      charge_now=$(cat /sys/class/power_supply/BAT1/charge_now);
+      echo $((charge_now / curr_now));
+   fi
 }
 
 get_battery_combined_percent() {
-
-	# get charge of all batteries, combine them
-	total_charge=$(expr $(acpi -b | grep -Eo "[0-9]+%" | tr -d '%' | paste -sd+ | bc));
-
-	# get amount of batteries in the device
-	battery_number=$(acpi -b | wc -l);
-
-	percent=$(expr $total_charge / $battery_number);
-
-	echo $percent;
+	echo $(cat /sys/class/power_supply/BAT1/capacity);
 }
 
 get_battery_charging_status() {
 
-	if $(acpi -b | grep --quiet Discharging)
-	then
-      battery_percent=$(acpi -b | grep -Eo '[0-9]+%' | tr -d '%');
+	if [ $(cat /sys/class/power_supply/BAT1/status) = "Discharging" ]; then
+      battery_percent=$(cat /sys/class/power_supply/BAT1/capacity);
       if   [ "$battery_percent" -ge 95 ]; then
          echo -e "\Uf0079";   # battery_full
       elif [ "$battery_percent" -ge 85 ]; then
@@ -127,7 +120,7 @@ print_bat(){
 		#echo -e "${charge}"
 	#fi
 	#echo "$(get_battery_charging_status) $(get_battery_combined_percent)%, $(get_time_until_charged )";
-	echo "$(get_battery_charging_status) $(get_battery_combined_percent)%, $(get_time_until_charged )";
+	echo "$(get_battery_charging_status) $(get_battery_combined_percent)%, $(get_time_until_charged)";
 }
 
 print_date(){
